@@ -545,6 +545,9 @@
             WARNING_TIME_SECONDS: 300,
             FLAG_COOLDOWN_MS: 4000,
 
+            // API configuration
+            API_URL: 'https://web-production-5e50.up.railway.app/api',
+
             // Audio configuration
             AUDIO_BASE_PATH: '/audio',        // Path to audio files in Vercel
             MAX_AUDIO_PLAYS: 2,               // Maximum times audio can be played
@@ -1173,6 +1176,55 @@
             });
             const [currentQuestion, setCurrentQuestion] = useState(null);
             const [selectedAnswer, setSelectedAnswer] = useState(null);
+            const [saveStatus, setSaveStatus] = useState({ saving: false, saved: false, error: null });
+            const [testStartTime] = useState(Date.now());
+
+            // ----- SAVE RESULTS TO BACKEND -----
+            const saveResultsToBackend = useCallback(async (finalAxisStates, finalLevel, timeUsedSeconds) => {
+                setSaveStatus({ saving: true, saved: false, error: null });
+
+                try {
+                    const totalQuestions = AXIS_ORDER.reduce((sum, axis) =>
+                        sum + finalAxisStates[axis].answersHistory.length, 0);
+                    const totalCorrect = AXIS_ORDER.reduce((sum, axis) =>
+                        sum + finalAxisStates[axis].answersHistory.filter(a => a.correct).length, 0);
+
+                    const testData = {
+                        studentName: `${studentData.firstName} ${studentData.lastName}`,
+                        dni: studentData.dni,
+                        language: language,
+                        totalQuestions: totalQuestions,
+                        correctAnswers: totalCorrect,
+                        incorrectAnswers: totalQuestions - totalCorrect,
+                        scorePercentage: totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
+                        levelAchieved: finalLevel,
+                        timeLimitSeconds: CONFIG.TEST_DURATION_SECONDS,
+                        timeUsedSeconds: timeUsedSeconds,
+                        axisResults: AXIS_ORDER.map(axis => ({
+                            axis: axis,
+                            level: finalAxisStates[axis].finalLevel || 'PRE-A1',
+                            correct: finalAxisStates[axis].answersHistory.filter(a => a.correct).length,
+                            total: finalAxisStates[axis].answersHistory.length,
+                            answers: finalAxisStates[axis].answersHistory
+                        }))
+                    };
+
+                    const response = await fetch(`${CONFIG.API_URL}/results/save`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(testData)
+                    });
+
+                    if (response.ok) {
+                        setSaveStatus({ saving: false, saved: true, error: null });
+                    } else {
+                        throw new Error('Error al guardar resultados');
+                    }
+                } catch (error) {
+                    console.error('Error saving results:', error);
+                    setSaveStatus({ saving: false, saved: false, error: error.message });
+                }
+            }, [studentData, language]);
 
             // ----- CALLBACKS -----
             const completeTest = useCallback(() => setStage('results'), []);
@@ -1605,6 +1657,13 @@
                 const totalCorrect = AXIS_ORDER.reduce((sum, axis) => {
                     return sum + axisStates[axis].answersHistory.filter(a => a.correct).length;
                 }, 0);
+
+                // Auto-save results when reaching this stage
+                useEffect(() => {
+                    if (!saveStatus.saved && !saveStatus.saving && !saveStatus.error) {
+                        saveResultsToBackend(axisStates, finalLevel, timeUsed);
+                    }
+                }, []);
 
                 return (
                     <div className="container">
