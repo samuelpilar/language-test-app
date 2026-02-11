@@ -1235,6 +1235,19 @@
             const { flagCount, showWarning, warningMessage, closeWarning } = useIntegrityMonitor(isTestActive, cancelTest);
             const timeRemaining = useTimer(isTestActive, CONFIG.TEST_DURATION_SECONDS, completeTest);
 
+            // ----- AUTO-SAVE RESULTS -----
+            useEffect(() => {
+                if (stage === 'results' && !saveStatus.saved && !saveStatus.saving && !saveStatus.error) {
+                    const axisLevels = AXIS_ORDER.map(axis => axisStates[axis].finalLevel || 'PRE-A1');
+                    const levelOrder = ['PRE-A1', 'A1', 'A2', 'B1', 'B2'];
+                    const finalLevel = axisLevels.reduce((min, level) => {
+                        return levelOrder.indexOf(level) < levelOrder.indexOf(min) ? level : min;
+                    }, 'B2');
+                    const timeUsed = CONFIG.TEST_DURATION_SECONDS - timeRemaining;
+                    saveResultsToBackend(axisStates, finalLevel, timeUsed);
+                }
+            }, [stage, saveStatus.saved, saveStatus.saving, saveStatus.error, axisStates, timeRemaining, saveResultsToBackend]);
+
             // ----- INITIALIZE TEST -----
             const initializeTest = useCallback(() => {
                 if (!language) return;
@@ -1638,19 +1651,6 @@
                     </div>
                 );
             }
-
-            // ----- AUTO-SAVE RESULTS -----
-            useEffect(() => {
-                if (stage === 'results' && !saveStatus.saved && !saveStatus.saving && !saveStatus.error) {
-                    const axisLevels = AXIS_ORDER.map(axis => axisStates[axis].finalLevel || 'PRE-A1');
-                    const levelOrder = ['PRE-A1', 'A1', 'A2', 'B1', 'B2'];
-                    const finalLevel = axisLevels.reduce((min, level) => {
-                        return levelOrder.indexOf(level) < levelOrder.indexOf(min) ? level : min;
-                    }, 'B2');
-                    const timeUsed = CONFIG.TEST_DURATION_SECONDS - timeRemaining;
-                    saveResultsToBackend(axisStates, finalLevel, timeUsed);
-                }
-            }, [stage, saveStatus.saved, saveStatus.saving, saveStatus.error]);
 
             // ==========================================================================
             // RENDER: RESULTS
