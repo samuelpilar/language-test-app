@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Nivel de Idioma - AFS (Adaptive)</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        /* ==========================================================================
+           BASE STYLES
+           ========================================================================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* ==========================================================================
+           LAYOUT COMPONENTS
+           ========================================================================== */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+
+        .content { padding: 40px; }
+
+        /* ==========================================================================
+           FORM STYLES
+           ========================================================================== */
+        .login-form { max-width: 500px; margin: 0 auto; padding: 20px; }
+
+        .form-group { margin-bottom: 25px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1em;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* ==========================================================================
+           LANGUAGE SELECTION
+           ========================================================================== */
+        .language-selector {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .language-btn {
+            flex: 1;
+            max-width: 300px;
+            padding: 40px 30px;
+            border: 3px solid #667eea;
+            background: white;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .language-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        .language-btn.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #764ba2;
+        }
+        .language-btn .flag {
+            width: 80px;
+            height: 60px;
+            margin: 0 auto 15px;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .language-btn h3 { font-size: 1.8em; margin-bottom: 10px; margin-top: 10px; }
+
+        /* ==========================================================================
+           TIMER & FLAGS (Fixed position during test)
+           ========================================================================== */
+        .timer-flags-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .timer, .flag-counter, .axis-indicator {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+        }
+        .timer { color: #667eea; }
+        .timer.warning { background: #ff6b6b; color: white; animation: pulse 1s infinite; }
+        .flag-counter.warning { background: #ffc107; color: white; }
+        .flag-counter.danger { background: #ff6b6b; color: white; }
+        .axis-indicator { background: #667eea; color: white; font-size: 1em; }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* ==========================================================================
+           MODAL (Warning popups)
+           ========================================================================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .modal h2 { color: #ff6b6b; margin-bottom: 20px; font-size: 2em; }
+        .modal p { font-size: 1.2em; line-height: 1.6; margin-bottom: 25px; color: #333; }
+
+        /* ==========================================================================
+           BUTTONS
+           ========================================================================== */
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover { transform: scale(1.05); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-secondary { background: #e0e0e0; color: #333; }
+
+        /* ==========================================================================
+           INSTRUCTION BOXES
+           ========================================================================== */
+        .instruction-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border-left: 5px solid #667eea;
+        }
+        .instruction-section h3 { color: #667eea; margin-bottom: 15px; font-size: 1.4em; }
+        .instruction-section ul { margin-left: 20px; line-height: 2; }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 3px solid #ffc107;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+        .warning-box h4 { color: #856404; margin-bottom: 15px; font-size: 1.3em; }
+
+        .danger-box {
+            background: #f8d7da;
+            border: 3px solid #dc3545;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+        .danger-box h4 { color: #721c24; margin-bottom: 15px; font-size: 1.3em; }
+
+        .success-box {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+        .success-box p { color: #155724; font-size: 1.1em; }
+
+        .info-box {
+            background: #e7f3ff;
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .info-box p { color: #004085; font-size: 1.1em; }
+
+        /* ==========================================================================
+           CHECKBOX / ACCEPTANCE
+           ========================================================================== */
+        .acceptance-checkbox {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            border: 3px solid #667eea;
+            margin: 25px 0;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .acceptance-checkbox input {
+            width: 30px;
+            height: 30px;
+            margin-right: 20px;
+            cursor: pointer;
+        }
+
+        /* ==========================================================================
+           PROGRESS BAR
+           ========================================================================== */
+        .progress-container { margin-bottom: 30px; }
+
+        .axis-progress {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .axis-progress-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .axis-progress-item .label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .axis-progress-item .bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .axis-progress-item .bar .fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .axis-progress-item .bar .fill.grammar { background: #667eea; }
+        .axis-progress-item .bar .fill.reading { background: #28a745; }
+        .axis-progress-item .bar .fill.listening { background: #ffc107; }
+
+        .axis-progress-item.active .label { font-weight: bold; color: #333; }
+        .axis-progress-item.completed .label { color: #28a745; }
+        .axis-progress-item.completed .label::after { content: ' ✓'; }
+
+        /* ==========================================================================
+           QUESTION CARD
+           ========================================================================== */
+        .question-card {
+            background: #f8f9fa;
+            padding: 35px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .section-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        .level-badge-small {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #f0f4ff;
+            color: #667eea;
+            border-radius: 20px;
+            font-size: 0.95em;
+            font-weight: bold;
+            border: 2px solid #667eea;
+        }
+
+        .question-text {
+            font-size: 1.4em;
+            margin: 25px 0;
+            line-height: 1.8;
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* ==========================================================================
+           ANSWER OPTIONS
+           ========================================================================== */
+        .options { display: flex; flex-direction: column; gap: 15px; }
+
+        .option {
+            padding: 25px;
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            font-size: 1.1em;
+        }
+        .option:hover { border-color: #667eea; transform: translateX(5px); }
+        .option.selected { border-color: #667eea; background: #f0f4ff; }
+
+        .option-letter {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 20px;
+            font-size: 1.1em;
+            flex-shrink: 0;
+        }
+        .option.selected .option-letter { background: #764ba2; }
+
+        /* ==========================================================================
+           READING PASSAGE & AUDIO
+           ========================================================================== */
+        .reading-passage {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 25px 0;
+            line-height: 2;
+            border-left: 5px solid #667eea;
+            font-size: 1.05em;
+        }
+        .reading-passage h4 { color: #667eea; margin-bottom: 15px; }
+
+        .audio-box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+            border: 2px solid #667eea;
+        }
+
+        .audio-box audio {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 15px;
+        }
+
+        .audio-play-count {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        /* ==========================================================================
+           NAVIGATION
+           ========================================================================== */
+        .nav-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        /* ==========================================================================
+           RESULTS PAGE
+           ========================================================================== */
+        .results-container { text-align: center; padding: 50px 40px; }
+
+        .level-badge {
+            display: inline-block;
+            padding: 30px 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 25px;
+            font-size: 4em;
+            font-weight: bold;
+            margin: 30px 0;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .level-badge.pre-a1 { background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%); }
+
+        .score-details {
+            background: #f8f9fa;
+            padding: 35px;
+            border-radius: 15px;
+            margin: 30px auto;
+            text-align: left;
+            max-width: 700px;
+        }
+
+        .score-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 18px 0;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 1.2em;
+        }
+
+        .axis-breakdown {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .axis-result {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .axis-result:last-child { border-bottom: none; }
+
+        .axis-result .axis-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .axis-result .axis-level {
+            font-size: 1.3em;
+            font-weight: bold;
+            padding: 8px 20px;
+            border-radius: 20px;
+            color: white;
+        }
+
+        .axis-result .axis-level.grammar { background: #667eea; }
+        .axis-result .axis-level.reading { background: #28a745; }
+        .axis-result .axis-level.listening { background: #ffc107; color: #333; }
+
+        .confidence-bar {
+            width: 100px;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-left: 15px;
+        }
+
+        .confidence-bar .fill {
+            height: 100%;
+            background: #28a745;
+            border-radius: 4px;
+        }
+
+        /* ==========================================================================
+           RESPONSIVE
+           ========================================================================== */
+        @media (max-width: 768px) {
+            .timer-flags-container {
+                position: static;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+            .language-selector { flex-direction: column; align-items: center; }
+            .nav-buttons { flex-direction: column; }
+            .axis-progress { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+        // ==========================================================================
+        // CONSTANTS & CONFIGURATION
+        // ==========================================================================
+
+        const CONFIG = {
+            TEST_DURATION_SECONDS: 2400,      // 40 minutes
+            MAX_FLAGS: 3,
+            WARNING_TIME_SECONDS: 300,
+            FLAG_COOLDOWN_MS: 4000,
+
+            // Audio configuration
+            AUDIO_BASE_PATH: '/audio',        // Path to audio files in Vercel
+            MAX_AUDIO_PLAYS: 2,               // Maximum times audio can be played
+
+            // Adaptive testing configuration
+            ADAPTIVE: {
+                START_LEVEL: 'A2',
+                MIN_QUESTIONS_PER_AXIS: 6,
+                MAX_QUESTIONS_PER_AXIS: 10,
+                MASTERY_THRESHOLD: 0.70,
+                CONSECUTIVE_FOR_CONFIDENCE: 3,
+                LEVELS: ['A1', 'A2', 'B1', 'B2'],
+                LEVEL_SCORES: { 'A1': 25, 'A2': 50, 'B1': 75, 'B2': 100 }
+            }
+        };
+
+        // Section display names
+        const SECTION_NAMES = {
+            french: { grammar: 'Gramática', reading: 'Comprensión Lectora', listening: 'Comprensión Auditiva' },
+            german: { grammar: 'Grammatik', reading: 'Leseverstehen', listening: 'Hörverstehen' }
+        };
+
+        const AXIS_ORDER = ['grammar', 'reading', 'listening'];
+
+        // ==========================================================================
+        // QUESTION BANK - Organized by Level for Adaptive Selection
+        // ==========================================================================
+
+        function getQuestionBank(lang) {
+            const isFrench = lang === 'french';
+            const audioPath = `${CONFIG.AUDIO_BASE_PATH}/${lang}`;
+
+            // Structure: { grammar: { A1: [...], A2: [...], ... }, reading: {...}, listening: {...} }
+            const bank = {
+                grammar: { A1: [], A2: [], B1: [], B2: [] },
+                reading: { A1: [], A2: [], B1: [], B2: [] },
+                listening: { A1: [], A2: [], B1: [], B2: [] }
+            };
+
+            // ----- GRAMMAR QUESTIONS BY LEVEL -----
+            if (isFrench) {
+                // French A1 Grammar
+                bank.grammar.A1 = [
+                    { id: 'fr-g-a1-1', q: 'Je ___ français.', opts: ['parle', 'parles', 'parlons', 'parlent'], c: 0 },
+                    { id: 'fr-g-a1-2', q: 'Elle ___ une pomme.', opts: ['mange', 'manges', 'mangeons', 'mangent'], c: 0 },
+                    { id: 'fr-g-a1-3', q: 'Nous ___ à Paris.', opts: ['habite', 'habites', 'habitons', 'habitent'], c: 2 },
+                    { id: 'fr-g-a1-4', q: 'Tu ___ le café?', opts: ['aime', 'aimes', 'aimons', 'aiment'], c: 1 },
+                    { id: 'fr-g-a1-5', q: 'Ils ___ la télévision.', opts: ['regarde', 'regardes', 'regardons', 'regardent'], c: 3 },
+                ];
+
+                // French A2 Grammar
+                bank.grammar.A2 = [
+                    { id: 'fr-g-a2-1', q: 'Hier, nous ___ au cinéma.', opts: ['allons', 'sommes allés', 'allions', 'irons'], c: 1 },
+                    { id: 'fr-g-a2-2', q: 'Je ___ ce film hier.', opts: ['vois', 'ai vu', 'voyais', 'verrai'], c: 1 },
+                    { id: 'fr-g-a2-3', q: 'Quand j\'étais jeune, je ___ beaucoup.', opts: ['lis', 'ai lu', 'lisais', 'lirai'], c: 2 },
+                    { id: 'fr-g-a2-4', q: 'Demain, nous ___ là.', opts: ['allons', 'sommes allés', 'allions', 'irons'], c: 3 },
+                    { id: 'fr-g-a2-5', q: 'Elle ___ partie ce matin.', opts: ['a', 'est', 'avait', 'était'], c: 1 },
+                ];
+
+                // French B1 Grammar
+                bank.grammar.B1 = [
+                    { id: 'fr-g-b1-1', q: 'Si j\'avais su, je ___ venu.', opts: ['serais', 'serai', 'suis', 'étais'], c: 0 },
+                    { id: 'fr-g-b1-2', q: 'Il aurait réussi s\'il ___ travaillé.', opts: ['a', 'avait', 'aurait', 'aura'], c: 1 },
+                    { id: 'fr-g-b1-3', q: 'Le livre ___ je parle est bon.', opts: ['que', 'qui', 'dont', 'où'], c: 2 },
+                    { id: 'fr-g-b1-4', q: 'En ___ ça, il a compris.', opts: ['entendre', 'entendant', 'entendu', 'entend'], c: 1 },
+                    { id: 'fr-g-b1-5', q: 'Je me souviens ___ ce jour.', opts: ['le', 'du', 'au', 'de'], c: 3 },
+                ];
+
+                // French B2 Grammar
+                bank.grammar.B2 = [
+                    { id: 'fr-g-b2-1', q: 'Il faut que tu ___ plus.', opts: ['fais', 'fasses', 'feras', 'ferais'], c: 1 },
+                    { id: 'fr-g-b2-2', q: 'Bien qu\'il ___ malade, il travaille.', opts: ['est', 'soit', 'sera', 'était'], c: 1 },
+                    { id: 'fr-g-b2-3', q: 'Quoi que vous ___, je reste.', opts: ['faites', 'fassiez', 'ferez', 'feriez'], c: 1 },
+                    { id: 'fr-g-b2-4', q: 'Je doute qu\'il ___ raison.', opts: ['a', 'ait', 'aura', 'avait'], c: 1 },
+                    { id: 'fr-g-b2-5', q: 'Pourvu qu\'elle ___ à temps.', opts: ['arrive', 'arrivera', 'arriverait', 'est arrivée'], c: 0 },
+                ];
+            } else {
+                // German A1 Grammar
+                bank.grammar.A1 = [
+                    { id: 'de-g-a1-1', q: 'Ich ___ Deutsch.', opts: ['spreche', 'sprichst', 'sprechen', 'spricht'], c: 0 },
+                    { id: 'de-g-a1-2', q: 'Sie ___ einen Apfel.', opts: ['esse', 'isst', 'essen', 'esst'], c: 1 },
+                    { id: 'de-g-a1-3', q: 'Wir ___ in Berlin.', opts: ['wohne', 'wohnst', 'wohnen', 'wohnt'], c: 2 },
+                    { id: 'de-g-a1-4', q: 'Du ___ Kaffee?', opts: ['trinkst', 'trinke', 'trinken', 'trinkt'], c: 0 },
+                    { id: 'de-g-a1-5', q: 'Er ___ ein Buch.', opts: ['lese', 'liest', 'lesen', 'lest'], c: 1 },
+                ];
+
+                // German A2 Grammar
+                bank.grammar.A2 = [
+                    { id: 'de-g-a2-1', q: 'Gestern ___ wir ins Kino.', opts: ['haben', 'sind', 'waren', 'hatten'], c: 1 },
+                    { id: 'de-g-a2-2', q: 'Ich ___ den Film gesehen.', opts: ['bin', 'habe', 'war', 'hatte'], c: 1 },
+                    { id: 'de-g-a2-3', q: 'Als ich jung war, ___ ich viel.', opts: ['lese', 'habe gelesen', 'las', 'werde lesen'], c: 2 },
+                    { id: 'de-g-a2-4', q: 'Morgen ___ wir da sein.', opts: ['gehen', 'sind gegangen', 'gingen', 'werden'], c: 3 },
+                    { id: 'de-g-a2-5', q: 'Sie ___ gestern nach Hause gegangen.', opts: ['hat', 'ist', 'hatte', 'war'], c: 1 },
+                ];
+
+                // German B1 Grammar
+                bank.grammar.B1 = [
+                    { id: 'de-g-b1-1', q: 'Wenn ich Zeit hätte, ___ ich kommen.', opts: ['würde', 'werde', 'will', 'wollte'], c: 0 },
+                    { id: 'de-g-b1-2', q: 'Er hätte es geschafft, wenn er ___.', opts: ['arbeitet', 'gearbeitet hätte', 'arbeitete', 'arbeiten'], c: 1 },
+                    { id: 'de-g-b1-3', q: 'Das Buch, ___ ich erzähle, ist gut.', opts: ['über das', 'von dem', 'das', 'dem'], c: 1 },
+                    { id: 'de-g-b1-4', q: '___ er das hörte, verstand er alles.', opts: ['Hörend', 'Gehört', 'Als', 'Zu hören'], c: 2 },
+                    { id: 'de-g-b1-5', q: 'Ich erinnere mich ___ den Tag.', opts: ['an', 'auf', 'über', 'von'], c: 0 },
+                ];
+
+                // German B2 Grammar
+                bank.grammar.B2 = [
+                    { id: 'de-g-b2-1', q: 'Der Mann, ___ Buch ich gelesen habe...', opts: ['der', 'dessen', 'dem', 'den'], c: 1 },
+                    { id: 'de-g-b2-2', q: 'Obwohl er krank ___, kam er zur Arbeit.', opts: ['ist', 'war', 'sei', 'wäre'], c: 1 },
+                    { id: 'de-g-b2-3', q: 'Was auch immer Sie ___, ich bleibe.', opts: ['tun', 'täten', 'getan haben', 'tun werden'], c: 0 },
+                    { id: 'de-g-b2-4', q: 'Er behauptet, er ___ nichts davon gewusst.', opts: ['hat', 'habe', 'hatte', 'hätte'], c: 1 },
+                    { id: 'de-g-b2-5', q: 'Je mehr er isst, ___ dicker wird er.', opts: ['desto', 'umso', 'je', 'so'], c: 0 },
+                ];
+            }
+
+            // ----- READING QUESTIONS BY LEVEL -----
+            if (isFrench) {
+                bank.reading.A1 = [
+                    { id: 'fr-r-a1-1', passage: 'Marie habite à Paris. Elle travaille dans un café.', q: 'Où travaille Marie?', opts: ['Restaurant', 'Café', 'Bureau', 'École'], c: 1 },
+                    { id: 'fr-r-a1-2', passage: 'Pierre a 25 ans. Il est étudiant à Lyon.', q: 'Quel âge a Pierre?', opts: ['20 ans', '25 ans', '30 ans', '35 ans'], c: 1 },
+                    { id: 'fr-r-a1-3', passage: 'Le chat dort sur le canapé. Il est très fatigué.', q: 'Où est le chat?', opts: ['Sur la table', 'Sur le canapé', 'Dans le jardin', 'Sous le lit'], c: 1 },
+                ];
+
+                bank.reading.A2 = [
+                    { id: 'fr-r-a2-1', passage: 'Le marché est ouvert tous les samedis. On y trouve des fruits et légumes frais.', q: 'Quand est le marché?', opts: ['Tous les jours', 'Les samedis', 'Les dimanches', 'Les lundis'], c: 1 },
+                    { id: 'fr-r-a2-2', passage: 'Sophie prend le métro pour aller au travail. Le trajet dure 30 minutes.', q: 'Combien de temps dure le trajet?', opts: ['15 min', '30 min', '45 min', '1 heure'], c: 1 },
+                    { id: 'fr-r-a2-3', passage: 'La bibliothèque ferme à 18h. Elle ouvre à 9h du matin.', q: 'À quelle heure ferme la bibliothèque?', opts: ['17h', '18h', '19h', '20h'], c: 1 },
+                ];
+
+                bank.reading.B1 = [
+                    { id: 'fr-r-b1-1', passage: 'La gastronomie française est reconnue mondialement. Chaque région a ses spécialités.', q: 'Qu\'est-ce qui caractérise la gastronomie française?', opts: ['Prix bas', 'Diversité régionale', 'Rapidité', 'Simplicité'], c: 1 },
+                    { id: 'fr-r-b1-2', passage: 'Le système éducatif est gratuit jusqu\'à 16 ans. Le baccalauréat reste important.', q: 'Jusqu\'à quel âge l\'éducation est gratuite?', opts: ['14 ans', '16 ans', '18 ans', '20 ans'], c: 1 },
+                    { id: 'fr-r-b1-3', passage: 'Les Français accordent beaucoup d\'importance aux repas. Ils sont des moments de partage.', q: 'Que représentent les repas?', opts: ['Une obligation', 'Un moment social', 'Une perte de temps', 'Un luxe'], c: 1 },
+                ];
+
+                bank.reading.B2 = [
+                    { id: 'fr-r-b2-1', passage: 'L\'évolution technologique transforme notre société. Les experts s\'inquiètent de l\'impact sur les relations authentiques et la vie privée.', q: 'De quoi s\'inquiètent les experts?', opts: ['Du coût', 'De l\'impact social', 'De la vitesse', 'De l\'accès'], c: 1 },
+                    { id: 'fr-r-b2-2', passage: 'Le défi consiste à trouver un équilibre entre innovation et valeurs humaines. Ce n\'est pas simple.', q: 'Quel est le défi mentionné?', opts: ['Plus de tech', 'Équilibre', 'Interdire', 'Financement'], c: 1 },
+                    { id: 'fr-r-b2-3', passage: 'Les réseaux sociaux ont révolutionné la communication, mais posent des questions éthiques importantes.', q: 'Quel effet ont eu les réseaux sociaux?', opts: ['Aucun', 'Révolutionné la communication', 'Réduit les contacts', 'Augmenté les coûts'], c: 1 },
+                ];
+            } else {
+                // German Reading
+                bank.reading.A1 = [
+                    { id: 'de-r-a1-1', passage: 'Anna wohnt in Berlin. Sie arbeitet in einem Café.', q: 'Wo arbeitet Anna?', opts: ['Restaurant', 'Café', 'Büro', 'Schule'], c: 1 },
+                    { id: 'de-r-a1-2', passage: 'Peter ist 25 Jahre alt. Er studiert in München.', q: 'Wie alt ist Peter?', opts: ['20', '25', '30', '35'], c: 1 },
+                    { id: 'de-r-a1-3', passage: 'Die Katze schläft auf dem Sofa. Sie ist sehr müde.', q: 'Wo ist die Katze?', opts: ['Auf dem Tisch', 'Auf dem Sofa', 'Im Garten', 'Unter dem Bett'], c: 1 },
+                ];
+
+                bank.reading.A2 = [
+                    { id: 'de-r-a2-1', passage: 'Der Markt ist jeden Samstag geöffnet. Man findet frisches Obst und Gemüse.', q: 'Wann ist der Markt?', opts: ['Jeden Tag', 'Samstags', 'Sonntags', 'Montags'], c: 1 },
+                    { id: 'de-r-a2-2', passage: 'Sophie fährt mit der U-Bahn zur Arbeit. Die Fahrt dauert 30 Minuten.', q: 'Wie lange dauert die Fahrt?', opts: ['15 Min', '30 Min', '45 Min', '1 Stunde'], c: 1 },
+                    { id: 'de-r-a2-3', passage: 'Die Bibliothek schließt um 18 Uhr. Sie öffnet um 9 Uhr morgens.', q: 'Wann schließt die Bibliothek?', opts: ['17 Uhr', '18 Uhr', '19 Uhr', '20 Uhr'], c: 1 },
+                ];
+
+                bank.reading.B1 = [
+                    { id: 'de-r-b1-1', passage: 'Die deutsche Küche ist vielfältig. Jede Region hat ihre eigenen Spezialitäten.', q: 'Was charakterisiert die deutsche Küche?', opts: ['Einheitlichkeit', 'Regionale Vielfalt', 'Schnelligkeit', 'Einfachheit'], c: 1 },
+                    { id: 'de-r-b1-2', passage: 'Das Bildungssystem ist bis 16 Jahre Pflicht. Das Abitur bleibt wichtig.', q: 'Bis wann ist Bildung Pflicht?', opts: ['14 Jahre', '16 Jahre', '18 Jahre', '20 Jahre'], c: 1 },
+                    { id: 'de-r-b1-3', passage: 'Die Deutschen legen Wert auf gemeinsame Mahlzeiten. Sie sind Momente des Austauschs.', q: 'Was bedeuten Mahlzeiten?', opts: ['Eine Pflicht', 'Soziale Momente', 'Zeitverschwendung', 'Luxus'], c: 1 },
+                ];
+
+                bank.reading.B2 = [
+                    { id: 'de-r-b2-1', passage: 'Die Digitalisierung verändert unsere Gesellschaft. Experten befürchten Auswirkungen auf authentische Beziehungen.', q: 'Wovor haben Experten Angst?', opts: ['Kosten', 'Soziale Auswirkungen', 'Geschwindigkeit', 'Zugang'], c: 1 },
+                    { id: 'de-r-b2-2', passage: 'Die Herausforderung ist, Innovation und menschliche Werte auszubalancieren.', q: 'Was ist die Herausforderung?', opts: ['Mehr Tech', 'Balance finden', 'Verbieten', 'Finanzierung'], c: 1 },
+                    { id: 'de-r-b2-3', passage: 'Soziale Medien haben die Kommunikation revolutioniert, werfen aber ethische Fragen auf.', q: 'Was haben soziale Medien bewirkt?', opts: ['Nichts', 'Kommunikation revolutioniert', 'Kontakte reduziert', 'Kosten erhöht'], c: 1 },
+                ];
+            }
+
+            // ----- LISTENING QUESTIONS BY LEVEL (with real audio file paths) -----
+            // Audios mejorados: más largos, voces correctas por género, sin respuesta directa
+            if (isFrench) {
+                bank.listening.A1 = [
+                    { id: 'fr-l-a1-1', audioFile: `${audioPath}/fr-l-a1-1.mp3`, q: 'Quel âge a Pierre?', opts: ['15 ans', '25 ans', '35 ans', '45 ans'], c: 1 },
+                    { id: 'fr-l-a1-2', audioFile: `${audioPath}/fr-l-a1-2.mp3`, q: 'Quel temps fait-il?', opts: ['Il pleut', 'Il fait beau', 'Il neige', 'Il fait froid'], c: 1 },
+                    { id: 'fr-l-a1-3', audioFile: `${audioPath}/fr-l-a1-3.mp3`, q: 'Où habite Jean?', opts: ['Paris', 'Lyon', 'Marseille', 'Nice'], c: 1 },
+                ];
+
+                bank.listening.A2 = [
+                    { id: 'fr-l-a2-1', audioFile: `${audioPath}/fr-l-a2-1.mp3`, q: 'À quelle heure part le train?', opts: ['13h30', '14h30', '15h30', '16h30'], c: 1 },
+                    { id: 'fr-l-a2-2', audioFile: `${audioPath}/fr-l-a2-2.mp3`, q: 'Quand aura lieu la réunion?', opts: ['Aujourd\'hui', 'Demain', 'La semaine prochaine', 'Elle est annulée'], c: 1 },
+                    { id: 'fr-l-a2-3', audioFile: `${audioPath}/fr-l-a2-3.mp3`, q: 'À quelle heure ferme le restaurant?', opts: ['20h', '21h', '22h', '23h'], c: 2 },
+                ];
+
+                bank.listening.B1 = [
+                    { id: 'fr-l-b1-1', audioFile: `${audioPath}/fr-l-b1-1.mp3`, q: 'Combien d\'années d\'expérience sont demandées?', opts: ['1 an', '2 ans', '3 ans', '5 ans'], c: 2 },
+                    { id: 'fr-l-b1-2', audioFile: `${audioPath}/fr-l-b1-2.mp3`, q: 'Quel temps est prévu l\'après-midi?', opts: ['Pluie', 'Nuages', 'Soleil', 'Neige'], c: 2 },
+                    { id: 'fr-l-b1-3', audioFile: `${audioPath}/fr-l-b1-3.mp3`, q: 'Quand le projet sera-t-il terminé?', opts: ['Fin janvier', 'Fin février', 'Fin mars', 'Fin avril'], c: 2 },
+                ];
+
+                bank.listening.B2 = [
+                    { id: 'fr-l-b2-1', audioFile: `${audioPath}/fr-l-b2-1.mp3`, q: 'Pourquoi le projet est-il reporté?', opts: ['Problèmes de personnel', 'Raisons budgétaires', 'Problèmes techniques', 'Période de vacances'], c: 1 },
+                    { id: 'fr-l-b2-2', audioFile: `${audioPath}/fr-l-b2-2.mp3`, q: 'Que démontre l\'étude?', opts: ['Aucune relation', 'Une corrélation significative', 'Une erreur méthodologique', 'Un problème de données'], c: 1 },
+                    { id: 'fr-l-b2-3', audioFile: `${audioPath}/fr-l-b2-3.mp3`, q: 'Comment sont décrits les résultats préliminaires?', opts: ['Décevants', 'Encourageants', 'Neutres', 'Définitifs'], c: 1 },
+                ];
+            } else {
+                // German Listening
+                bank.listening.A1 = [
+                    { id: 'de-l-a1-1', audioFile: `${audioPath}/de-l-a1-1.mp3`, q: 'Wie alt ist Peter?', opts: ['15 Jahre', '25 Jahre', '35 Jahre', '45 Jahre'], c: 1 },
+                    { id: 'de-l-a1-2', audioFile: `${audioPath}/de-l-a1-2.mp3`, q: 'Wie ist das Wetter?', opts: ['Regnerisch', 'Schön', 'Es schneit', 'Kalt'], c: 1 },
+                    { id: 'de-l-a1-3', audioFile: `${audioPath}/de-l-a1-3.mp3`, q: 'Wo wohnt Hans?', opts: ['Berlin', 'München', 'Hamburg', 'Frankfurt'], c: 1 },
+                ];
+
+                bank.listening.A2 = [
+                    { id: 'de-l-a2-1', audioFile: `${audioPath}/de-l-a2-1.mp3`, q: 'Wann fährt der Zug ab?', opts: ['13:30 Uhr', '14:30 Uhr', '15:30 Uhr', '16:30 Uhr'], c: 1 },
+                    { id: 'de-l-a2-2', audioFile: `${audioPath}/de-l-a2-2.mp3`, q: 'Wann findet das Meeting statt?', opts: ['Heute', 'Morgen', 'Nächste Woche', 'Es ist abgesagt'], c: 1 },
+                    { id: 'de-l-a2-3', audioFile: `${audioPath}/de-l-a2-3.mp3`, q: 'Wann schließt das Restaurant?', opts: ['20 Uhr', '21 Uhr', '22 Uhr', '23 Uhr'], c: 2 },
+                ];
+
+                bank.listening.B1 = [
+                    { id: 'de-l-b1-1', audioFile: `${audioPath}/de-l-b1-1.mp3`, q: 'Wie viele Jahre Berufserfahrung werden verlangt?', opts: ['1 Jahr', '2 Jahre', '3 Jahre', '5 Jahre'], c: 2 },
+                    { id: 'de-l-b1-2', audioFile: `${audioPath}/de-l-b1-2.mp3`, q: 'Wie wird das Wetter am Nachmittag?', opts: ['Regen', 'Wolken', 'Sonne', 'Schnee'], c: 2 },
+                    { id: 'de-l-b1-3', audioFile: `${audioPath}/de-l-b1-3.mp3`, q: 'Wann wird das Projekt abgeschlossen?', opts: ['Ende Januar', 'Ende Februar', 'Ende März', 'Ende April'], c: 2 },
+                ];
+
+                bank.listening.B2 = [
+                    { id: 'de-l-b2-1', audioFile: `${audioPath}/de-l-b2-1.mp3`, q: 'Warum wird das Projekt verschoben?', opts: ['Personalprobleme', 'Budgetgründe', 'Technische Probleme', 'Urlaubszeit'], c: 1 },
+                    { id: 'de-l-b2-2', audioFile: `${audioPath}/de-l-b2-2.mp3`, q: 'Was zeigt die Studie?', opts: ['Keinen Zusammenhang', 'Eine signifikante Korrelation', 'Einen methodischen Fehler', 'Ein Datenproblem'], c: 1 },
+                    { id: 'de-l-b2-3', audioFile: `${audioPath}/de-l-b2-3.mp3`, q: 'Wie werden die vorläufigen Ergebnisse beschrieben?', opts: ['Enttäuschend', 'Ermutigend', 'Neutral', 'Endgültig'], c: 1 },
+                ];
+            }
+
+            return bank;
+        }
+
+        // ==========================================================================
+        // ADAPTIVE ENGINE
+        // ==========================================================================
+
+        function createAxisState() {
+            return {
+                currentLevel: CONFIG.ADAPTIVE.START_LEVEL,
+                questionsAsked: [],
+                answersHistory: [],
+                levelCorrect: { A1: 0, A2: 0, B1: 0, B2: 0 },
+                levelTotal: { A1: 0, A2: 0, B1: 0, B2: 0 },
+                consecutiveCorrect: 0,
+                consecutiveWrong: 0,
+                isComplete: false,
+                finalLevel: null,
+                confidence: 0
+            };
+        }
+
+        function selectNextQuestion(axisState, questionBank, axis) {
+            const { currentLevel, questionsAsked } = axisState;
+            const levels = CONFIG.ADAPTIVE.LEVELS;
+
+            const levelOrder = [currentLevel];
+            const currentIdx = levels.indexOf(currentLevel);
+
+            if (currentIdx > 0) levelOrder.push(levels[currentIdx - 1]);
+            if (currentIdx < levels.length - 1) levelOrder.push(levels[currentIdx + 1]);
+
+            for (const level of levelOrder) {
+                const available = questionBank[axis][level].filter(
+                    q => !questionsAsked.includes(q.id)
+                );
+                if (available.length > 0) {
+                    const question = available[Math.floor(Math.random() * available.length)];
+                    return { ...question, level, type: axis };
+                }
+            }
+
+            for (const level of levels) {
+                const available = questionBank[axis][level].filter(
+                    q => !questionsAsked.includes(q.id)
+                );
+                if (available.length > 0) {
+                    const question = available[Math.floor(Math.random() * available.length)];
+                    return { ...question, level, type: axis };
+                }
+            }
+
+            return null;
+        }
+
+        function updateAxisState(axisState, questionLevel, isCorrect) {
+            const newState = { ...axisState };
+            const levels = CONFIG.ADAPTIVE.LEVELS;
+
+            newState.answersHistory = [...axisState.answersHistory, { level: questionLevel, correct: isCorrect }];
+            newState.levelTotal[questionLevel]++;
+            if (isCorrect) newState.levelCorrect[questionLevel]++;
+
+            if (isCorrect) {
+                newState.consecutiveCorrect++;
+                newState.consecutiveWrong = 0;
+            } else {
+                newState.consecutiveWrong++;
+                newState.consecutiveCorrect = 0;
+            }
+
+            const currentIdx = levels.indexOf(axisState.currentLevel);
+
+            if (isCorrect && newState.consecutiveCorrect >= 2 && currentIdx < levels.length - 1) {
+                newState.currentLevel = levels[currentIdx + 1];
+                newState.consecutiveCorrect = 0;
+            } else if (!isCorrect && newState.consecutiveWrong >= 2 && currentIdx > 0) {
+                newState.currentLevel = levels[currentIdx - 1];
+                newState.consecutiveWrong = 0;
+            }
+
+            const totalQuestions = newState.answersHistory.length;
+
+            if (totalQuestions >= CONFIG.ADAPTIVE.MAX_QUESTIONS_PER_AXIS) {
+                newState.isComplete = true;
+            } else if (totalQuestions >= CONFIG.ADAPTIVE.MIN_QUESTIONS_PER_AXIS) {
+                const recentAnswers = newState.answersHistory.slice(-CONFIG.ADAPTIVE.CONSECUTIVE_FOR_CONFIDENCE);
+                const allSameLevel = recentAnswers.every(a => a.level === recentAnswers[0].level);
+                const accuracy = recentAnswers.filter(a => a.correct).length / recentAnswers.length;
+
+                if (allSameLevel && accuracy >= CONFIG.ADAPTIVE.MASTERY_THRESHOLD) {
+                    newState.isComplete = true;
+                }
+            }
+
+            if (newState.isComplete) {
+                newState.finalLevel = calculateAxisLevel(newState);
+                newState.confidence = calculateConfidence(newState);
+            }
+
+            return newState;
+        }
+
+        function calculateAxisLevel(axisState) {
+            const levels = CONFIG.ADAPTIVE.LEVELS;
+
+            for (let i = levels.length - 1; i >= 0; i--) {
+                const level = levels[i];
+                const total = axisState.levelTotal[level];
+                const correct = axisState.levelCorrect[level];
+
+                if (total >= 2) {
+                    const accuracy = correct / total;
+                    if (accuracy >= CONFIG.ADAPTIVE.MASTERY_THRESHOLD) {
+                        return level;
+                    }
+                }
+            }
+
+            for (let i = levels.length - 1; i >= 0; i--) {
+                const level = levels[i];
+                const total = axisState.levelTotal[level];
+                const correct = axisState.levelCorrect[level];
+
+                if (total >= 1 && correct >= 1) {
+                    return level;
+                }
+            }
+
+            return 'PRE-A1';
+        }
+
+        function calculateConfidence(axisState) {
+            const finalLevel = axisState.finalLevel;
+            if (!finalLevel || finalLevel === 'PRE-A1') return 50;
+
+            const total = axisState.levelTotal[finalLevel];
+            const correct = axisState.levelCorrect[finalLevel];
+
+            if (total === 0) return 50;
+
+            const accuracy = correct / total;
+            const questionsFactor = Math.min(total / 4, 1);
+
+            return Math.round((accuracy * 0.7 + questionsFactor * 0.3) * 100);
+        }
+
+        // ==========================================================================
+        // UTILITY FUNCTIONS
+        // ==========================================================================
+
+        function formatTime(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // ==========================================================================
+        // FLAG ICONS
+        // ==========================================================================
+
+        function FrenchFlag() {
+            return (
+                <svg className="flag" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="900" height="600" fill="#ED2939"/>
+                    <rect width="600" height="600" fill="#fff"/>
+                    <rect width="300" height="600" fill="#002395"/>
+                </svg>
+            );
+        }
+
+        function GermanFlag() {
+            return (
+                <svg className="flag" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="900" height="600" fill="#000"/>
+                    <rect y="200" width="900" height="200" fill="#D00"/>
+                    <rect y="400" width="900" height="200" fill="#FFCE00"/>
+                </svg>
+            );
+        }
+
+        // ==========================================================================
+        // REUSABLE COMPONENTS
+        // ==========================================================================
+
+        function Header({ title, subtitle, variant = 'default' }) {
+            const style = variant === 'error' ? { background: '#dc3545' } : {};
+            return (
+                <div className="header" style={style}>
+                    <h1>{title}</h1>
+                    {subtitle && <p>{subtitle}</p>}
+                </div>
+            );
+        }
+
+        function WarningModal({ flagCount, message, onClose }) {
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <h2>{flagCount === 1 ? 'PRIMERA' : 'SEGUNDA'} ADVERTENCIA</h2>
+                        <p style={{ fontSize: '1.3em', fontWeight: 'bold', color: '#ff6b6b' }}>{message}</p>
+                        <p style={{ fontSize: '1.2em', marginTop: '20px' }}>
+                            {flagCount === 2 ? 'ÚLTIMA OPORTUNIDAD!' : 'Te quedan 2 oportunidades.'}
+                        </p>
+                        <button className="btn btn-primary" onClick={onClose} style={{ marginTop: '25px' }}>
+                            Continuar Test
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function AxisProgressBar({ axisStates, currentAxis, language }) {
+            const sectionNames = SECTION_NAMES[language];
+
+            return (
+                <div className="axis-progress">
+                    {AXIS_ORDER.map(axis => {
+                        const state = axisStates[axis];
+                        const progress = state.isComplete ? 100 : (state.answersHistory.length / CONFIG.ADAPTIVE.MAX_QUESTIONS_PER_AXIS) * 100;
+                        const isActive = axis === currentAxis;
+                        const isCompleted = state.isComplete;
+
+                        return (
+                            <div key={axis} className={`axis-progress-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}>
+                                <div className="label">{sectionNames[axis]}</div>
+                                <div className="bar">
+                                    <div
+                                        className={`fill ${axis}`}
+                                        style={{ width: `${progress}%` }}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        }
+
+        /**
+         * AudioPlayer component with play limit
+         */
+        function AudioPlayer({ audioFile, maxPlays = CONFIG.MAX_AUDIO_PLAYS }) {
+            const [playCount, setPlayCount] = useState(0);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [error, setError] = useState(false);
+            const audioRef = useRef(null);
+
+            const canPlay = playCount < maxPlays;
+
+            const handlePlay = () => {
+                if (canPlay && audioRef.current) {
+                    audioRef.current.play();
+                    setIsPlaying(true);
+                }
+            };
+
+            const handleEnded = () => {
+                setPlayCount(prev => prev + 1);
+                setIsPlaying(false);
+            };
+
+            const handleError = () => {
+                setError(true);
+                setIsPlaying(false);
+            };
+
+            return (
+                <div className="audio-box">
+                    <p style={{ fontWeight: 'bold', marginBottom: '15px', fontSize: '1.2em' }}>
+                        Escucha el audio:
+                    </p>
+
+                    {error ? (
+                        <p style={{ color: '#dc3545' }}>Error al cargar el audio. Contacta al administrador.</p>
+                    ) : (
+                        <>
+                            <audio
+                                ref={audioRef}
+                                src={audioFile}
+                                onEnded={handleEnded}
+                                onError={handleError}
+                                preload="auto"
+                            />
+
+                            <button
+                                className="btn btn-primary"
+                                onClick={handlePlay}
+                                disabled={!canPlay || isPlaying}
+                                style={{ marginTop: '10px' }}
+                            >
+                                {isPlaying ? 'Reproduciendo...' : canPlay ? 'Reproducir Audio' : 'Sin reproducciones restantes'}
+                            </button>
+
+                            <p className="audio-play-count">
+                                Reproducciones: {playCount}/{maxPlays}
+                                {!canPlay && <span style={{ color: '#dc3545', marginLeft: '10px' }}>(máximo alcanzado)</span>}
+                            </p>
+                        </>
+                    )}
+                </div>
+            );
+        }
+
+        // ==========================================================================
+        // CUSTOM HOOKS
+        // ==========================================================================
+
+        function useIntegrityMonitor(isActive, onCancel) {
+            const [flagCount, setFlagCount] = useState(0);
+            const [showWarning, setShowWarning] = useState(false);
+            const [warningMessage, setWarningMessage] = useState('');
+            const isDetecting = useRef(false);
+
+            useEffect(() => {
+                if (!isActive) return;
+
+                const handleFlag = (message) => {
+                    if (isDetecting.current) return;
+                    isDetecting.current = true;
+
+                    setFlagCount(prev => {
+                        const newCount = prev + 1;
+                        if (newCount >= CONFIG.MAX_FLAGS) {
+                            onCancel();
+                        } else {
+                            setWarningMessage(`ADVERTENCIA ${newCount}/${CONFIG.MAX_FLAGS}: ${message}`);
+                            setShowWarning(true);
+                            setTimeout(() => {
+                                setShowWarning(false);
+                                isDetecting.current = false;
+                            }, CONFIG.FLAG_COOLDOWN_MS);
+                        }
+                        return newCount;
+                    });
+                };
+
+                const handleVisibilityChange = () => {
+                    if (document.hidden) handleFlag('Cambiaste de pestaña.');
+                };
+
+                const handleBlur = () => {
+                    if (!document.hidden) handleFlag('Saliste de la ventana.');
+                };
+
+                const handleContextMenu = (e) => {
+                    e.preventDefault();
+                    return false;
+                };
+
+                document.addEventListener('visibilitychange', handleVisibilityChange);
+                window.addEventListener('blur', handleBlur);
+                document.addEventListener('contextmenu', handleContextMenu);
+
+                return () => {
+                    document.removeEventListener('visibilitychange', handleVisibilityChange);
+                    window.removeEventListener('blur', handleBlur);
+                    document.removeEventListener('contextmenu', handleContextMenu);
+                };
+            }, [isActive, onCancel]);
+
+            const closeWarning = useCallback(() => setShowWarning(false), []);
+
+            return { flagCount, showWarning, warningMessage, closeWarning };
+        }
+
+        function useTimer(isActive, initialTime, onComplete) {
+            const [timeRemaining, setTimeRemaining] = useState(initialTime);
+
+            useEffect(() => {
+                if (!isActive || timeRemaining <= 0) return;
+
+                const timer = setInterval(() => {
+                    setTimeRemaining(prev => {
+                        if (prev <= 1) {
+                            onComplete();
+                            return 0;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
+
+                return () => clearInterval(timer);
+            }, [isActive, timeRemaining, onComplete]);
+
+            return timeRemaining;
+        }
+
+        // ==========================================================================
+        // MAIN APPLICATION
+        // ==========================================================================
+
+        function App() {
+            // ----- STATE -----
+            const [stage, setStage] = useState('login');
+            const [studentData, setStudentData] = useState({ firstName: '', lastName: '', dni: '' });
+            const [language, setLanguage] = useState(null);
+            const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+            // Adaptive test state
+            const [questionBank, setQuestionBank] = useState(null);
+            const [currentAxis, setCurrentAxis] = useState('grammar');
+            const [axisStates, setAxisStates] = useState({
+                grammar: createAxisState(),
+                reading: createAxisState(),
+                listening: createAxisState()
+            });
+            const [currentQuestion, setCurrentQuestion] = useState(null);
+            const [selectedAnswer, setSelectedAnswer] = useState(null);
+
+            // ----- CALLBACKS -----
+            const completeTest = useCallback(() => setStage('results'), []);
+            const cancelTest = useCallback(() => setStage('cancelled'), []);
+
+            // ----- HOOKS -----
+            const isTestActive = stage === 'test';
+            const { flagCount, showWarning, warningMessage, closeWarning } = useIntegrityMonitor(isTestActive, cancelTest);
+            const timeRemaining = useTimer(isTestActive, CONFIG.TEST_DURATION_SECONDS, completeTest);
+
+            // ----- INITIALIZE TEST -----
+            const initializeTest = useCallback(() => {
+                if (!language) return;
+
+                const bank = getQuestionBank(language);
+                setQuestionBank(bank);
+
+                const freshStates = {
+                    grammar: createAxisState(),
+                    reading: createAxisState(),
+                    listening: createAxisState()
+                };
+                setAxisStates(freshStates);
+                setCurrentAxis('grammar');
+
+                const firstQuestion = selectNextQuestion(freshStates.grammar, bank, 'grammar');
+                setCurrentQuestion(firstQuestion);
+                setSelectedAnswer(null);
+            }, [language]);
+
+            // ----- HANDLE ANSWER -----
+            const handleAnswer = useCallback(() => {
+                if (selectedAnswer === null || !currentQuestion) return;
+
+                const isCorrect = selectedAnswer === currentQuestion.c;
+                const axis = currentAxis;
+
+                const newAxisState = updateAxisState(
+                    axisStates[axis],
+                    currentQuestion.level,
+                    isCorrect
+                );
+                newAxisState.questionsAsked = [...newAxisState.questionsAsked, currentQuestion.id];
+
+                const newAxisStates = { ...axisStates, [axis]: newAxisState };
+                setAxisStates(newAxisStates);
+
+                if (newAxisState.isComplete) {
+                    const axisIdx = AXIS_ORDER.indexOf(axis);
+                    if (axisIdx < AXIS_ORDER.length - 1) {
+                        const nextAxis = AXIS_ORDER[axisIdx + 1];
+                        setCurrentAxis(nextAxis);
+                        const nextQuestion = selectNextQuestion(newAxisStates[nextAxis], questionBank, nextAxis);
+                        setCurrentQuestion(nextQuestion);
+                    } else {
+                        completeTest();
+                        return;
+                    }
+                } else {
+                    const nextQuestion = selectNextQuestion(newAxisState, questionBank, axis);
+                    if (nextQuestion) {
+                        setCurrentQuestion(nextQuestion);
+                    } else {
+                        newAxisState.isComplete = true;
+                        newAxisState.finalLevel = calculateAxisLevel(newAxisState);
+                        newAxisState.confidence = calculateConfidence(newAxisState);
+                        setAxisStates({ ...newAxisStates, [axis]: newAxisState });
+
+                        const axisIdx = AXIS_ORDER.indexOf(axis);
+                        if (axisIdx < AXIS_ORDER.length - 1) {
+                            const nextAxis = AXIS_ORDER[axisIdx + 1];
+                            setCurrentAxis(nextAxis);
+                            const nextQ = selectNextQuestion(newAxisStates[nextAxis], questionBank, nextAxis);
+                            setCurrentQuestion(nextQ);
+                        } else {
+                            completeTest();
+                            return;
+                        }
+                    }
+                }
+
+                setSelectedAnswer(null);
+            }, [selectedAnswer, currentQuestion, currentAxis, axisStates, questionBank, completeTest]);
+
+            // ----- EVENT HANDLERS -----
+            const handleLogin = (e) => {
+                e.preventDefault();
+                if (studentData.firstName && studentData.lastName && studentData.dni) {
+                    setStage('select');
+                }
+            };
+
+            const beginTest = () => {
+                if (acceptedTerms) {
+                    initializeTest();
+                    setStage('test');
+                }
+            };
+
+            // ==========================================================================
+            // RENDER: LOGIN
+            // ==========================================================================
+            if (stage === 'login') {
+                return (
+                    <div className="container">
+                        <Header
+                            title="Prueba de Nivel de Idioma"
+                            subtitle="AFS Programas Interculturales - Test Adaptativo"
+                        />
+                        <div className="content">
+                            <div className="login-form">
+                                <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#333' }}>
+                                    Datos del Estudiante
+                                </h2>
+                                <form onSubmit={handleLogin}>
+                                    <div className="form-group">
+                                        <label htmlFor="firstName">Nombre/s *</label>
+                                        <input
+                                            id="firstName"
+                                            type="text"
+                                            placeholder="Ingresa tu(s) nombre(s)"
+                                            value={studentData.firstName}
+                                            onChange={(e) => setStudentData(prev => ({ ...prev, firstName: e.target.value }))}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor="lastName">Apellido/s *</label>
+                                        <input
+                                            id="lastName"
+                                            type="text"
+                                            placeholder="Ingresa tu(s) apellido(s)"
+                                            value={studentData.lastName}
+                                            onChange={(e) => setStudentData(prev => ({ ...prev, lastName: e.target.value }))}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor="dni">DNI *</label>
+                                        <input
+                                            id="dni"
+                                            type="text"
+                                            placeholder="Ingresa tu DNI (sin puntos)"
+                                            value={studentData.dni}
+                                            onChange={(e) => setStudentData(prev => ({ ...prev, dni: e.target.value.replace(/\D/g, '') }))}
+                                            required
+                                        />
+                                    </div>
+                                    <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                                        <button type="submit" className="btn btn-primary" style={{ minWidth: '300px', padding: '18px 50px' }}>
+                                            Continuar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==========================================================================
+            // RENDER: LANGUAGE SELECTION
+            // ==========================================================================
+            if (stage === 'select') {
+                return (
+                    <div className="container">
+                        <Header
+                            title="Prueba de Nivel de Idioma"
+                            subtitle="Test Adaptativo"
+                        />
+                        <div className="content">
+                            <h2 style={{ textAlign: 'center', marginBottom: '10px', color: '#333', fontSize: '1.8em' }}>
+                                Hola, {studentData.firstName}
+                            </h2>
+                            <p style={{ textAlign: 'center', marginBottom: '40px', color: '#666', fontSize: '1.2em' }}>
+                                Selecciona el idioma a evaluar
+                            </p>
+                            <div className="language-selector">
+                                <div
+                                    className={`language-btn ${language === 'french' ? 'selected' : ''}`}
+                                    onClick={() => setLanguage('french')}
+                                    role="button"
+                                    tabIndex={0}
+                                >
+                                    <div className="flag"><FrenchFlag /></div>
+                                    <h3>Francés</h3>
+                                    <p>Test de niveau</p>
+                                </div>
+                                <div
+                                    className={`language-btn ${language === 'german' ? 'selected' : ''}`}
+                                    onClick={() => setLanguage('german')}
+                                    role="button"
+                                    tabIndex={0}
+                                >
+                                    <div className="flag"><GermanFlag /></div>
+                                    <h3>Alemán</h3>
+                                    <p>Sprachprüfung</p>
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => language && setStage('instructions')}
+                                    disabled={!language}
+                                    style={{ minWidth: '300px', fontSize: '1.2em', padding: '20px 50px' }}
+                                >
+                                    Continuar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==========================================================================
+            // RENDER: INSTRUCTIONS
+            // ==========================================================================
+            if (stage === 'instructions') {
+                const languageName = language === 'french' ? 'Francés' : 'Alemán';
+                return (
+                    <div className="container">
+                        <Header
+                            title={`Test Adaptativo - ${languageName}`}
+                            subtitle="Lee atentamente antes de comenzar"
+                        />
+                        <div className="content">
+                            <div className="info-box">
+                                <p><strong>¿Qué es un test adaptativo?</strong></p>
+                                <p style={{ marginTop: '10px' }}>
+                                    Las preguntas se ajustan a tu nivel. Si respondes bien, las preguntas se vuelven más difíciles.
+                                    Si te equivocas, se vuelven más fáciles. Esto permite determinar tu nivel real con mayor precisión.
+                                </p>
+                            </div>
+
+                            <div className="instruction-section">
+                                <h3>Información General</h3>
+                                <ul>
+                                    <li><strong>Duración estimada:</strong> 20-30 minutos</li>
+                                    <li><strong>Secciones:</strong> Gramática, Lectura y Escucha (evaluadas por separado)</li>
+                                    <li><strong>Preguntas:</strong> 6-10 por sección (según tu desempeño)</li>
+                                    <li><strong>Audios:</strong> Cada audio puede reproducirse máximo 2 veces</li>
+                                    <li><strong>Resultado:</strong> Un nivel por cada eje + nivel final</li>
+                                </ul>
+                            </div>
+
+                            <div className="instruction-section">
+                                <h3>Sistema de Evaluación</h3>
+                                <ul>
+                                    <li>Recibirás un <strong>nivel por cada eje</strong> (Gramática, Lectura, Escucha)</li>
+                                    <li>Tu <strong>nivel final</strong> será el <strong>menor</strong> de los tres</li>
+                                    <li>Para alcanzar un nivel, debes demostrar <strong>dominio real</strong> (mayor a 70% correcto)</li>
+                                    <li>No se puede "adivinar" hacia un nivel superior</li>
+                                </ul>
+                            </div>
+
+                            <div className="warning-box">
+                                <h4>Sistema de Integridad</h4>
+                                <ul>
+                                    <li>Se detecta cada vez que cambias de pestaña</li>
+                                    <li>Se detecta cuando sales de la ventana</li>
+                                    <li>El clic derecho está deshabilitado</li>
+                                    <li><strong>3 flags = test anulado automáticamente</strong></li>
+                                </ul>
+                            </div>
+
+                            <div
+                                className="acceptance-checkbox"
+                                onClick={() => setAcceptedTerms(!acceptedTerms)}
+                                role="checkbox"
+                                aria-checked={acceptedTerms}
+                                tabIndex={0}
+                            >
+                                <input type="checkbox" checked={acceptedTerms} onChange={() => {}} tabIndex={-1} />
+                                <label>
+                                    <strong>He leído y acepto las condiciones.</strong> Entiendo cómo funciona el test adaptativo
+                                    y el sistema de integridad.
+                                </label>
+                            </div>
+
+                            <div style={{ textAlign: 'center', marginTop: '40px' }}>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={beginTest}
+                                    disabled={!acceptedTerms}
+                                    style={{ minWidth: '350px', fontSize: '1.3em', padding: '20px 50px' }}
+                                >
+                                    {acceptedTerms ? 'Comenzar Test Adaptativo' : 'Debes aceptar los términos'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==========================================================================
+            // RENDER: TEST
+            // ==========================================================================
+            if (stage === 'test' && currentQuestion) {
+                const sectionNames = SECTION_NAMES[language];
+                const flagStyle = flagCount === 1 ? 'warning' : flagCount >= 2 ? 'danger' : '';
+                const totalQuestions = AXIS_ORDER.reduce((sum, axis) => sum + axisStates[axis].answersHistory.length, 0);
+
+                return (
+                    <>
+                        <div className="timer-flags-container">
+                            <div className={`timer ${timeRemaining < CONFIG.WARNING_TIME_SECONDS ? 'warning' : ''}`}>
+                                {formatTime(timeRemaining)}
+                            </div>
+                            <div className={`flag-counter ${flagStyle}`}>
+                                {flagCount}/{CONFIG.MAX_FLAGS}
+                            </div>
+                            <div className="axis-indicator">
+                                {sectionNames[currentAxis]}
+                            </div>
+                        </div>
+
+                        {showWarning && (
+                            <WarningModal flagCount={flagCount} message={warningMessage} onClose={closeWarning} />
+                        )}
+
+                        <div className="container">
+                            <Header
+                                title={language === 'french' ? 'Test Adaptatif' : 'Adaptiver Test'}
+                                subtitle={`Pregunta ${totalQuestions + 1}`}
+                            />
+                            <div className="content">
+                                <div className="progress-container">
+                                    <AxisProgressBar
+                                        axisStates={axisStates}
+                                        currentAxis={currentAxis}
+                                        language={language}
+                                    />
+                                </div>
+
+                                <div className="question-card">
+                                    <div className="question-header">
+                                        <span className="section-badge">{sectionNames[currentQuestion.type]}</span>
+                                        <span className="level-badge-small">Nivel: {currentQuestion.level}</span>
+                                    </div>
+
+                                    {currentQuestion.passage && (
+                                        <div className="reading-passage">
+                                            <h4>Texto:</h4>
+                                            <p>{currentQuestion.passage}</p>
+                                        </div>
+                                    )}
+
+                                    {currentQuestion.audioFile && (
+                                        <AudioPlayer
+                                            key={currentQuestion.id}
+                                            audioFile={currentQuestion.audioFile}
+                                            maxPlays={CONFIG.MAX_AUDIO_PLAYS}
+                                        />
+                                    )}
+
+                                    <div className="question-text">{currentQuestion.q}</div>
+
+                                    <div className="options" role="radiogroup">
+                                        {currentQuestion.opts.map((option, index) => (
+                                            <div
+                                                key={index}
+                                                className={`option ${selectedAnswer === index ? 'selected' : ''}`}
+                                                onClick={() => setSelectedAnswer(index)}
+                                                role="radio"
+                                                aria-checked={selectedAnswer === index}
+                                                tabIndex={0}
+                                            >
+                                                <span className="option-letter">{String.fromCharCode(65 + index)}</span>
+                                                <span>{option}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="nav-buttons">
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={handleAnswer}
+                                        disabled={selectedAnswer === null}
+                                        style={{ minWidth: '250px', fontSize: '1.2em' }}
+                                    >
+                                        Confirmar Respuesta
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                );
+            }
+
+            // ==========================================================================
+            // RENDER: CANCELLED
+            // ==========================================================================
+            if (stage === 'cancelled') {
+                return (
+                    <div className="container">
+                        <Header title="Test Anulado" variant="error" />
+                        <div style={{ textAlign: 'center', padding: '60px 40px' }}>
+                            <div style={{ fontSize: '6em', marginBottom: '30px' }}>X</div>
+                            <h2 style={{ color: '#dc3545', fontSize: '2.5em', marginBottom: '30px' }}>
+                                Test anulado automáticamente
+                            </h2>
+                            <p style={{ fontSize: '1.3em', color: '#333' }}>
+                                <strong>{studentData.firstName} {studentData.lastName}</strong>, se detectaron{' '}
+                                <strong style={{ color: '#dc3545' }}>3 actividades sospechosas</strong>.
+                            </p>
+                            <div className="danger-box" style={{ maxWidth: '600px', margin: '40px auto' }}>
+                                <p>Cambiaste de pestaña o saliste de la ventana 3 veces.</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==========================================================================
+            // RENDER: RESULTS
+            // ==========================================================================
+            if (stage === 'results') {
+                const languageName = language === 'french' ? 'Francés' : 'Alemán';
+                const sectionNames = SECTION_NAMES[language];
+
+                const axisLevels = AXIS_ORDER.map(axis => axisStates[axis].finalLevel || 'PRE-A1');
+                const levelOrder = ['PRE-A1', 'A1', 'A2', 'B1', 'B2'];
+                const finalLevel = axisLevels.reduce((min, level) => {
+                    return levelOrder.indexOf(level) < levelOrder.indexOf(min) ? level : min;
+                }, 'B2');
+
+                const timeUsed = CONFIG.TEST_DURATION_SECONDS - timeRemaining;
+                const totalQuestions = AXIS_ORDER.reduce((sum, axis) => sum + axisStates[axis].answersHistory.length, 0);
+                const totalCorrect = AXIS_ORDER.reduce((sum, axis) => {
+                    return sum + axisStates[axis].answersHistory.filter(a => a.correct).length;
+                }, 0);
+
+                return (
+                    <div className="container">
+                        <Header
+                            title="Test Completado!"
+                            subtitle={`Resultado de Nivel de ${languageName}`}
+                        />
+                        <div className="results-container">
+                            <p style={{ fontSize: '1.3em', color: '#666', marginBottom: '20px' }}>
+                                <strong>{studentData.firstName} {studentData.lastName}</strong> - DNI: {studentData.dni}
+                            </p>
+
+                            <h2>Tu nivel final es:</h2>
+                            <div className={`level-badge ${finalLevel === 'PRE-A1' ? 'pre-a1' : ''}`}>
+                                {finalLevel}
+                            </div>
+                            <p style={{ fontSize: '1.1em', color: '#666', margin: '10px 0 30px' }}>
+                                (Nivel más bajo de los tres ejes)
+                            </p>
+
+                            <div className="score-details">
+                                <h3 style={{ color: '#667eea', marginBottom: '20px', textAlign: 'center' }}>
+                                    Resultados por Eje
+                                </h3>
+
+                                <div className="axis-breakdown">
+                                    {AXIS_ORDER.map(axis => {
+                                        const state = axisStates[axis];
+                                        const level = state.finalLevel || 'PRE-A1';
+                                        const correct = state.answersHistory.filter(a => a.correct).length;
+                                        const total = state.answersHistory.length;
+
+                                        return (
+                                            <div key={axis} className="axis-result">
+                                                <div>
+                                                    <span className="axis-name">{sectionNames[axis]}</span>
+                                                    <span style={{ color: '#666', marginLeft: '15px' }}>
+                                                        ({correct}/{total} correctas)
+                                                    </span>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                    <span className={`axis-level ${axis}`}>{level}</span>
+                                                    <div className="confidence-bar" title={`Confianza: ${state.confidence}%`}>
+                                                        <div className="fill" style={{ width: `${state.confidence}%` }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="score-row" style={{ marginTop: '20px' }}>
+                                    <span><strong>Tiempo utilizado:</strong></span>
+                                    <span>{formatTime(timeUsed)}</span>
+                                </div>
+                                <div className="score-row">
+                                    <span><strong>Preguntas totales:</strong></span>
+                                    <span>{totalQuestions}</span>
+                                </div>
+                                <div className="score-row">
+                                    <span><strong>Correctas totales:</strong></span>
+                                    <span style={{ color: '#28a745', fontWeight: 'bold' }}>{totalCorrect}</span>
+                                </div>
+                                <div className="score-row" style={{ borderBottom: 'none' }}>
+                                    <span><strong>Flags de integridad:</strong></span>
+                                    <span style={{ color: flagCount > 0 ? '#ff6b6b' : '#28a745', fontWeight: 'bold' }}>
+                                        {flagCount} {flagCount > 0 ? '!' : 'OK'}
+                                    </span>
+                                </div>
+
+                                <div className="score-row" style={{
+                                    marginTop: '20px',
+                                    paddingTop: '25px',
+                                    borderTop: '3px solid #667eea',
+                                    borderBottom: 'none',
+                                    fontSize: '1.4em'
+                                }}>
+                                    <span><strong>NIVEL CERTIFICADO:</strong></span>
+                                    <span style={{ color: '#667eea', fontWeight: 'bold' }}>{finalLevel}</span>
+                                </div>
+                            </div>
+
+                            {flagCount === 0 && (
+                                <div className="success-box">
+                                    <p><strong>Excelente:</strong> Test completado con integridad total.</p>
+                                </div>
+                            )}
+
+                            <div className="info-box" style={{ maxWidth: '600px', margin: '20px auto', textAlign: 'left' }}>
+                                <p><strong>¿Cómo se calculó tu nivel?</strong></p>
+                                <p style={{ marginTop: '10px' }}>
+                                    El test adaptativo evaluó cada eje por separado. Para cada eje, se te presentaron
+                                    preguntas de dificultad creciente hasta determinar el nivel donde demuestras dominio
+                                    (mayor a 70% correcto). Tu nivel final es el menor de los tres ejes, ya que debes demostrar
+                                    competencia equilibrada.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return null;
+        }
+
+        // ==========================================================================
+        // RENDER
+        // ==========================================================================
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
